@@ -62,10 +62,17 @@ Every PR must use the template in `.github/PULL_REQUEST_TEMPLATE.md`. Fill in:
 
 ### Review Process
 
-1. Open PR targeting dev.
-2. Request review from Maintainer.
-3. Address all review comments.
-4. Maintainer merges after approval.
+**Competitive PRs (multiple PRs per issue):**
+1. Each contributor opens their own PR targeting dev.
+2. All other contributors review all competing PRs.
+3. Minimum 2 approvals required.
+4. Maintainer merges the best implementation after considering votes, quality, and tests.
+
+**Collaborative PRs (one PR per issue):**
+1. Team collaborates on one branch, one PR targeting dev.
+2. Add all contributors as co-authors in commit message.
+3. Minimum 2 approvals from team members who contributed.
+4. Maintainer reviews and merges.
 
 ---
 
@@ -73,14 +80,16 @@ Every PR must use the template in `.github/PULL_REQUEST_TEMPLATE.md`. Fill in:
 
 | Role | Permission | Responsibility |
 |------|-----------|---------------|
-| Maintainer | Write | Repo architecture, PR reviews, supervisor agent, config, M1+M8 integration. Reviews all PRs. |
-| Contributor | Write | Owns assigned milestone issues. Creates feature branches, opens PRs, responds to review feedback. |
+| Faculty | Admin (org owner) | Reviews milestones. Only person who merges dev into main. |
+| Maintainer | Maintain | Reviews PRs, merges into dev. Does NOT write code or raise PRs. |
+| Contributor | Write | Works on every issue. Raises PRs (individually or collaboratively). Reviews peers' PRs. |
 
-### Code Ownership
+### How Everyone Works on Every Issue
 
-- Only modify files within your assigned milestone unless coordinating with the owner.
-- If your work depends on another contributor's module, open an issue or discuss in the pod channel first.
-- Shared files (config, utils, models) require Maintainer approval for changes.
+- No issue is assigned to a single contributor. All 4 contributors work on all 35 issues.
+- For each issue, the team decides: competitive PRs (each person submits) or collaborative PR (one team submission).
+- Every contributor must be able to explain any part of the codebase in Q&A. Faculty will ask at random.
+- This ensures full-stack learning. No one leaves the project knowing only "their module."
 
 ---
 
