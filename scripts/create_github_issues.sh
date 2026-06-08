@@ -109,12 +109,12 @@ curl http://localhost:8000/health
 
 ## Acceptance Criteria
 
-- [ ] All \`src/\` packages are importable without errors
-- [ ] \`pip install -r requirements.txt\` succeeds in a clean virtualenv
-- [ ] \`docker-compose build\` succeeds without errors
-- [ ] \`docker-compose up\` starts backend, frontend, and PostgreSQL
-- [ ] \`.gitignore\` covers: \`.env\`, \`__pycache__\`, \`*.pyc\`, \`node_modules/\`, \`data/videos/\`, model weights, \`_internal/\`
-- [ ] Directory structure matches what is defined in PROJECT_CONTEXT.md
+- All \`src/\` packages are importable without errors
+- \`pip install -r requirements.txt\` succeeds in a clean virtualenv
+- \`docker-compose build\` succeeds without errors
+- \`docker-compose up\` starts backend, frontend, and PostgreSQL
+- \`.gitignore\` covers: \`.env\`, \`__pycache__\`, \`*.pyc\`, \`node_modules/\`, \`data/videos/\`, model weights, \`_internal/\`
+- Directory structure matches what is defined in PROJECT_CONTEXT.md
 
 ## Branch
 
@@ -165,12 +165,12 @@ git push origin test/ci-check
 
 ## Acceptance Criteria
 
-- [ ] CI triggers automatically on every PR targeting \`dev\` or \`main\`
-- [ ] Runs \`black --check\`, \`isort --check\`, \`flake8\`, and \`pytest\` in that order
-- [ ] PR shows green checkmark (pass) or red X (fail) in GitHub UI
-- [ ] Workflow completes in under 3 minutes
-- [ ] Uses Python 3.10 to match project requirements
-- [ ] Caches pip dependencies for faster runs
+- CI triggers automatically on every PR targeting \`dev\` or \`main\`
+- Runs \`black --check\`, \`isort --check\`, \`flake8\`, and \`pytest\` in that order
+- PR shows green checkmark (pass) or red X (fail) in GitHub UI
+- Workflow completes in under 3 minutes
+- Uses Python 3.10 to match project requirements
+- Caches pip dependencies for faster runs
 
 ## Branch
 
@@ -241,13 +241,13 @@ pytest tests/test_models.py -v
 
 ## Acceptance Criteria
 
-- [ ] 6 SQLAlchemy models with correct columns, types, foreign keys, and relationships
-- [ ] User model supports roles (student/teacher) and privacy preferences
-- [ ] EngagementLog stores per-frame data: timestamp, score, state, gaze, drowsiness, expression
-- [ ] Alembic migration creates all tables from scratch (\`alembic upgrade head\`)
-- [ ] Seed script populates database with realistic sample data
-- [ ] \`alembic downgrade base\` cleanly removes all tables
-- [ ] At least 3 tests: model creation, relationships, constraints
+- 6 SQLAlchemy models with correct columns, types, foreign keys, and relationships
+- User model supports roles (student/teacher) and privacy preferences
+- EngagementLog stores per-frame data: timestamp, score, state, gaze, drowsiness, expression
+- Alembic migration creates all tables from scratch (\`alembic upgrade head\`)
+- Seed script populates database with realistic sample data
+- \`alembic downgrade base\` cleanly removes all tables
+- At least 3 tests: model creation, relationships, constraints
 
 ## Branch
 
@@ -304,13 +304,13 @@ pytest tests/test_capture.py tests/test_preprocessor.py -v
 
 ## Acceptance Criteria
 
-- [ ] Captures frames at configurable FPS (default 15)
-- [ ] Handles missing webcam gracefully (clear error message, not crash)
-- [ ] Preprocessor outputs consistent size (640x480 default), RGB color space
-- [ ] Actual FPS within 20% of target FPS on laptop CPU
-- [ ] Can switch between webcam and video file input (for testing with recordings)
-- [ ] Frame timestamp attached to each frame for temporal analysis
-- [ ] At least 3 tests: capture initialization, preprocessing output shape, FPS stability
+- Captures frames at configurable FPS (default 15)
+- Handles missing webcam gracefully (clear error message, not crash)
+- Preprocessor outputs consistent size (640x480 default), RGB color space
+- Actual FPS within 20% of target FPS on laptop CPU
+- Can switch between webcam and video file input (for testing with recordings)
+- Frame timestamp attached to each frame for temporal analysis
+- At least 3 tests: capture initialization, preprocessing output shape, FPS stability
 
 ## Branch
 
@@ -369,14 +369,14 @@ asyncio.run(test())
 
 ## Acceptance Criteria
 
-- [ ] WebSocket endpoint at \`/ws/session/{session_id}\`
-- [ ] Accepts base64-encoded frames with timestamps
-- [ ] Decodes frames and passes to preprocessing pipeline
-- [ ] Sends engagement score back to client after processing
-- [ ] Handles client disconnect gracefully (cleanup resources)
-- [ ] Supports multiple concurrent connections (one per student)
-- [ ] Connection authenticated via session token
-- [ ] At least 3 tests: connection, frame processing, disconnect handling
+- WebSocket endpoint at \`/ws/session/{session_id}\`
+- Accepts base64-encoded frames with timestamps
+- Decodes frames and passes to preprocessing pipeline
+- Sends engagement score back to client after processing
+- Handles client disconnect gracefully (cleanup resources)
+- Supports multiple concurrent connections (one per student)
+- Connection authenticated via session token
+- At least 3 tests: connection, frame processing, disconnect handling
 
 ## Branch
 
@@ -386,59 +386,85 @@ asyncio.run(test())
 
 Closes #1, Closes #4"
 
-create_issue 6 "Build user onboarding and role management API" "$M1" "m1,infra" \
+create_issue 6 "Build user auth with Google OAuth, JWT sessions, and onboarding API" "$M1" "m1,infra,frontend" \
 "## Why
 
 EngageIQ has two distinct user types - students and teachers - with different permissions, different dashboards, and different data access. A teacher can see class-level analytics but not individual student names (unless opted in). A student can see their own data but not other students'. This role distinction must be enforced at the API level, not just the UI level.
 
-The onboarding flow also captures privacy preferences. Under India's DPDPA (Digital Personal Data Protection Act, 2023), collecting biometric-adjacent data (facial landmarks) requires informed consent. The onboarding screen explains what data is collected, how it is processed (on-device, not stored), and what the student can opt out of. This is not optional - it is a legal requirement.
+Google OAuth is the primary login method because the target users are college students and teachers, almost all of them have a Google account (university email or personal Gmail). One-click Google login reduces signup friction to near zero.
+
+The flow: user clicks \"Sign in with Google\" -> Google consent screen -> backend receives auth code -> exchanges for Google profile (name, email, avatar) -> creates or finds user in database -> issues a JWT token for session management. On first login, the user is directed to an onboarding screen where they select their role (student/teacher) and privacy preferences.
+
+The onboarding flow captures privacy preferences. Under India's DPDPA (Digital Personal Data Protection Act, 2023), collecting biometric-adjacent data (facial landmarks) requires informed consent. The onboarding screen explains what data is collected, how it is processed (on-device, not stored), and what the student can opt out of. This is not optional - it is a legal requirement.
 
 ## What needs to be built
 
-API endpoints for user registration, login, role management, and privacy preferences.
+Google OAuth integration, JWT token issuance/validation, protected route middleware, user onboarding (role + privacy), course CRUD, enrollment, frontend login UI.
 
 ## Files to create or update
 
-- \`src/api/routes/users.py\` - User CRUD and auth endpoints
+- \`src/api/routes/auth.py\` - Google OAuth callback, token issuance, token refresh
+- \`src/api/routes/users.py\` - User profile, onboarding (role + privacy selection)
 - \`src/api/routes/courses.py\` - Course enrollment endpoints
-- \`src/api/schemas/user.py\` - Pydantic request/response schemas
+- \`src/api/middleware/auth.py\` - JWT verification middleware, role-based access (student vs teacher)
+- \`src/api/schemas/user.py\` - Pydantic schemas (UserCreate, UserResponse, TokenResponse)
+- \`src/models/user.py\` - Add google_id, avatar_url, auth_provider fields
+- \`frontend/src/components/GoogleLoginButton.jsx\` - Google sign-in button
+- \`frontend/src/contexts/AuthContext.jsx\` - Auth state management, token storage, auto-refresh
+- \`.env.example\` - Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, JWT_SECRET_KEY
 
 ## How this affects overall development
 
-User authentication gates every API endpoint. The session API (#5 WebSocket) needs to know which user is connecting. The nudge preferences (#23) are stored per user. The analytics (#24-26) filter by user role. Without user management, nothing else can be properly tested with realistic multi-user scenarios.
+User identity gates every API endpoint. The session API (#5 WebSocket) needs to know which user is connecting. The nudge preferences (#23) are stored per user. The analytics (#24-26) filter by user role. Protected routes ensure only authenticated users can start webcam sessions or view analytics. Without user management, nothing else can be properly tested with realistic multi-user scenarios.
 
 ## How to test locally
 
 \`\`\`bash
-# Start backend
+# 1. Set up Google OAuth credentials at console.cloud.google.com
+#    - Create OAuth 2.0 Client ID (Web application)
+#    - Add http://localhost:5173 to Authorized JavaScript origins
+#    - Add http://localhost:8000/api/auth/google/callback to Authorized redirect URIs
+#    - Copy Client ID and Client Secret to .env
+
+# 2. Start backend
 uvicorn src.api.main:app --reload
 
-# Register a student
-curl -X POST http://localhost:8000/api/users/register \\
-  -H 'Content-Type: application/json' \\
-  -d '{\"name\": \"Rahul\", \"email\": \"rahul@nst.edu\", \"role\": \"student\", \"privacy_mode\": \"anonymized\"}'
+# 3. Start frontend
+cd frontend && npm run dev
 
-# Register a teacher
-curl -X POST http://localhost:8000/api/users/register \\
-  -H 'Content-Type: application/json' \\
-  -d '{\"name\": \"Prof. Sharma\", \"email\": \"sharma@nst.edu\", \"role\": \"teacher\"}'
+# 4. Click \"Sign in with Google\" -> consent screen -> redirected back -> logged in
+# 5. First-time users see onboarding: select role (student/teacher) + privacy preference
 
-# Enroll student in course
+# 6. Verify JWT works
+TOKEN=\"<jwt_from_login_response>\"
+curl -H \"Authorization: Bearer \$TOKEN\" http://localhost:8000/api/users/me
+
+# 7. Test protected route without token
+curl http://localhost:8000/api/users/me
+# Should return 401 Unauthorized
+
+# 8. Enroll student in course
 curl -X POST http://localhost:8000/api/courses/1/enroll \\
-  -H 'Content-Type: application/json' \\
-  -d '{\"user_id\": 1}'
+  -H \"Authorization: Bearer \$TOKEN\"
 
 pytest tests/test_users.py -v
 \`\`\`
 
 ## Acceptance Criteria
 
-- [ ] POST /api/users/register creates user with role (student/teacher)
+- [ ] Google OAuth login flow works end-to-end (click -> consent -> JWT -> logged in)
+- [ ] Backend exchanges Google auth code for user profile (name, email, avatar)
+- [ ] New users directed to onboarding screen on first login (select role + privacy)
+- [ ] JWT issued on login, expires in 24 hours, refresh token for 7 days
+- [ ] JWT middleware protects routes: webcam session, engagement data, analytics
+- [ ] Role-based access: teacher-only routes (class analytics, intervention) check role
+- [ ] Privacy mode required for students (must explicitly choose anonymized or identified)
+- [ ] Frontend shows Google login button, user avatar + name after login, logout button
+- [ ] Auth state persists across page refresh (token stored in memory, refresh on expiry)
+- [ ] POST /api/courses/{id}/enroll adds authenticated student to course
 - [ ] GET /api/users/{id} returns user profile (role-appropriate fields)
-- [ ] POST /api/courses/{id}/enroll adds student to course
-- [ ] Privacy preferences stored per user: anonymized (default), identified (opt-in)
-- [ ] Input validation: email format, role must be student/teacher, duplicate email rejected
-- [ ] At least 4 tests: register student, register teacher, enroll, duplicate email
+- [ ] Input validation: duplicate email rejected, valid roles only
+- [ ] At least 5 tests: Google login mock, JWT validation, protected route 401, role check, course enrollment
 
 ## Branch
 
@@ -509,12 +535,12 @@ alembic downgrade base
 
 ## Acceptance Criteria
 
-- [ ] \`alembic upgrade head\` creates all tables defined in models
-- [ ] \`alembic downgrade base\` cleanly removes all tables
-- [ ] Seed script creates: 2 teachers, 10 students, 3 courses, 5 sessions, sample engagement logs
-- [ ] Seed script is idempotent (running twice does not create duplicates)
-- [ ] Migration file is auto-generated from SQLAlchemy models (\`alembic revision --autogenerate\`)
-- [ ] At least 2 tests: migration up/down, seed data counts
+- \`alembic upgrade head\` creates all tables defined in models
+- \`alembic downgrade base\` cleanly removes all tables
+- Seed script creates: 2 teachers, 10 students, 3 courses, 5 sessions, sample engagement logs
+- Seed script is idempotent (running twice does not create duplicates)
+- Migration file is auto-generated from SQLAlchemy models (\`alembic revision --autogenerate\`)
+- At least 2 tests: migration up/down, seed data counts
 
 ## Branch
 
@@ -570,13 +596,13 @@ pytest tests/test_face_mesh.py -v
 
 ## Acceptance Criteria
 
-- [ ] Returns 468 (x, y, z) landmarks per face with confidence score
-- [ ] Lazy initialization: model loads on first \`detect()\` call, not on import
-- [ ] Processes frames at 25+ FPS on laptop CPU (i5/Ryzen 5 or better)
-- [ ] Handles no-face frames gracefully (returns empty list, no crash)
-- [ ] Handles multiple faces (returns list of face results)
-- [ ] Demo script visualizes landmarks on live webcam feed
-- [ ] At least 4 tests: single face, no face, multiple faces, confidence threshold
+- Returns 468 (x, y, z) landmarks per face with confidence score
+- Lazy initialization: model loads on first \`detect()\` call, not on import
+- Processes frames at 25+ FPS on laptop CPU (i5/Ryzen 5 or better)
+- Handles no-face frames gracefully (returns empty list, no crash)
+- Handles multiple faces (returns list of face results)
+- Demo script visualizes landmarks on live webcam feed
+- At least 4 tests: single face, no face, multiple faces, confidence threshold
 
 ## Branch
 
@@ -633,12 +659,12 @@ pytest tests/test_head_pose.py -v
 
 ## Acceptance Criteria
 
-- [ ] Returns pitch, yaw, roll in degrees (float)
-- [ ] Uses 6 reference landmarks from Face Mesh (nose tip, chin, eye corners, mouth corners)
-- [ ] Accuracy within 5 degrees when compared to known ground truth poses
-- [ ] Handles partial face occlusion gracefully (returns None if insufficient landmarks visible)
-- [ ] Demo script draws 3D coordinate axes on nose tip in webcam feed
-- [ ] At least 4 tests: frontal face, turned left, turned right, looking down
+- Returns pitch, yaw, roll in degrees (float)
+- Uses 6 reference landmarks from Face Mesh (nose tip, chin, eye corners, mouth corners)
+- Accuracy within 5 degrees when compared to known ground truth poses
+- Handles partial face occlusion gracefully (returns None if insufficient landmarks visible)
+- Demo script draws 3D coordinate axes on nose tip in webcam feed
+- At least 4 tests: frontal face, turned left, turned right, looking down
 
 ## Branch
 
@@ -698,12 +724,12 @@ pytest tests/test_gaze_classifier.py -v
 
 ## Acceptance Criteria
 
-- [ ] 5 gaze states: AT_SCREEN, AWAY_LEFT, AWAY_RIGHT, LOOKING_DOWN, EYES_CLOSED
-- [ ] Combines head pose (pitch, yaw) with iris position ratio
-- [ ] Thresholds: yaw > 20deg = away, pitch < -25deg = looking down, EAR < 0.2 = eyes closed
-- [ ] All thresholds configurable in settings
-- [ ] Demo script with color-coded gaze state overlay on webcam
-- [ ] At least 5 tests: one per gaze state
+- 5 gaze states: AT_SCREEN, AWAY_LEFT, AWAY_RIGHT, LOOKING_DOWN, EYES_CLOSED
+- Combines head pose (pitch, yaw) with iris position ratio
+- Thresholds: yaw > 20deg = away, pitch < -25deg = looking down, EAR < 0.2 = eyes closed
+- All thresholds configurable in settings
+- Demo script with color-coded gaze state overlay on webcam
+- At least 5 tests: one per gaze state
 
 ## Branch
 
@@ -769,13 +795,13 @@ pytest tests/test_face_selector.py -v
 
 ## Acceptance Criteria
 
-- [ ] Selects primary face from multiple detected faces
-- [ ] First frame: selects largest face (closest to camera) or user-selected face
-- [ ] Subsequent frames: tracks the same face using embedding similarity
-- [ ] Handles face disappearing and reappearing (re-identification within 5 seconds)
-- [ ] Returns None when primary face not found (not a random other face)
-- [ ] Works with up to 5 faces in frame without performance degradation
-- [ ] At least 4 tests: single face, multi face selection, tracking persistence, face disappearance
+- Selects primary face from multiple detected faces
+- First frame: selects largest face (closest to camera) or user-selected face
+- Subsequent frames: tracks the same face using embedding similarity
+- Handles face disappearing and reappearing (re-identification within 5 seconds)
+- Returns None when primary face not found (not a random other face)
+- Works with up to 5 faces in frame without performance degradation
+- At least 4 tests: single face, multi face selection, tracking persistence, face disappearance
 
 ## Branch
 
@@ -842,13 +868,13 @@ pytest tests/test_drowsiness.py -v
 
 ## Acceptance Criteria
 
-- [ ] \`compute_ear\` returns float from 6 eye landmarks
-- [ ] Blinks (< 0.3 seconds of low EAR) are NOT detected as drowsiness
-- [ ] Drowsiness (> 1.5 seconds of sustained low EAR) IS detected
-- [ ] EAR threshold configurable (default 0.25, adjusted by calibration #19)
-- [ ] Duration threshold configurable (default 1.5 seconds)
-- [ ] False positive rate < 5% during normal attentive behavior
-- [ ] At least 5 tests: open eye EAR, closed eye EAR, blink not drowsy, sustained closure is drowsy, threshold edge cases
+- \`compute_ear\` returns float from 6 eye landmarks
+- Blinks (< 0.3 seconds of low EAR) are NOT detected as drowsiness
+- Drowsiness (> 1.5 seconds of sustained low EAR) IS detected
+- EAR threshold configurable (default 0.25, adjusted by calibration #19)
+- Duration threshold configurable (default 1.5 seconds)
+- False positive rate < 5% during normal attentive behavior
+- At least 5 tests: open eye EAR, closed eye EAR, blink not drowsy, sustained closure is drowsy, threshold edge cases
 
 ## Branch
 
@@ -912,13 +938,13 @@ pytest tests/test_yawn.py -v
 
 ## Acceptance Criteria
 
-- [ ] \`compute_mar\` returns float from mouth landmarks
-- [ ] Yawn detection requires sustained opening > 2 seconds (not brief speech)
-- [ ] MAR threshold configurable (default 0.6)
-- [ ] \`is_fatigued\` method combines yawn frequency + optional EAR data
-- [ ] Fatigue triggered by 3+ yawns in 10 minutes
-- [ ] Speech (rapid mouth movement) does not trigger yawn detection
-- [ ] At least 4 tests: yawn MAR, speech MAR, fatigue assessment, threshold edge cases
+- \`compute_mar\` returns float from mouth landmarks
+- Yawn detection requires sustained opening > 2 seconds (not brief speech)
+- MAR threshold configurable (default 0.6)
+- \`is_fatigued\` method combines yawn frequency + optional EAR data
+- Fatigue triggered by 3+ yawns in 10 minutes
+- Speech (rapid mouth movement) does not trigger yawn detection
+- At least 4 tests: yawn MAR, speech MAR, fatigue assessment, threshold edge cases
 
 ## Branch
 
@@ -973,13 +999,13 @@ pytest tests/test_expression.py -v
 
 ## Acceptance Criteria
 
-- [ ] 4 expression classes: ENGAGED, CONFUSED, BORED, NEUTRAL
-- [ ] Uses pre-trained FER model with transfer learning for 4-class output
-- [ ] Accuracy > 70% on FER2013 test set (mapped to 4 classes)
-- [ ] Inference time < 50ms per face crop on CPU
-- [ ] Returns expression enum + confidence score (0-1)
-- [ ] Handles poor lighting gracefully (returns NEUTRAL with low confidence, not crash)
-- [ ] At least 4 tests: one per expression class with sample images
+- 4 expression classes: ENGAGED, CONFUSED, BORED, NEUTRAL
+- Uses pre-trained FER model with transfer learning for 4-class output
+- Accuracy > 70% on FER2013 test set (mapped to 4 classes)
+- Inference time < 50ms per face crop on CPU
+- Returns expression enum + confidence score (0-1)
+- Handles poor lighting gracefully (returns NEUTRAL with low confidence, not crash)
+- At least 4 tests: one per expression class with sample images
 
 ## Branch
 
@@ -1038,14 +1064,14 @@ print(f'Model loaded successfully')
 
 ## Acceptance Criteria
 
-- [ ] Notebook runs end-to-end without errors (Cell -> Run All)
-- [ ] Downloads and processes FER2013 dataset automatically
-- [ ] Documents 7-to-4 class mapping with justification
-- [ ] Applies at least 3 data augmentations relevant to webcam imagery
-- [ ] Training achieves > 70% accuracy on 4-class test set
-- [ ] Confusion matrix shows per-class precision and recall
-- [ ] Exports trained model weights to \`models/expression_model.pth\`
-- [ ] Markdown cells explain every major decision (not just code comments)
+- Notebook runs end-to-end without errors (Cell -> Run All)
+- Downloads and processes FER2013 dataset automatically
+- Documents 7-to-4 class mapping with justification
+- Applies at least 3 data augmentations relevant to webcam imagery
+- Training achieves > 70% accuracy on 4-class test set
+- Confusion matrix shows per-class precision and recall
+- Exports trained model weights to \`models/expression_model.pth\`
+- Markdown cells explain every major decision (not just code comments)
 
 ## Branch
 
@@ -1107,13 +1133,13 @@ print(f'Missing expression: {score:.1f}')  # should redistribute weights, still 
 
 ## Acceptance Criteria
 
-- [ ] Score range 0-100 with clear interpretation (0 = fully disengaged, 100 = fully engaged)
-- [ ] Default weights: gaze 30%, pose 20%, expression 25%, alertness 25%
-- [ ] Weights configurable per course type (theory, lab, seminar, discussion profiles)
-- [ ] Handles missing signals gracefully: redistributes weight proportionally among remaining signals
-- [ ] At least 8 test cases covering: all high, all low, mixed, missing signals, edge cases
-- [ ] Score is a float, not an integer (enables fine-grained temporal smoothing)
-- [ ] Function is pure (no side effects, no state) - easy to test and reason about
+- Score range 0-100 with clear interpretation (0 = fully disengaged, 100 = fully engaged)
+- Default weights: gaze 30%, pose 20%, expression 25%, alertness 25%
+- Weights configurable per course type (theory, lab, seminar, discussion profiles)
+- Handles missing signals gracefully: redistributes weight proportionally among remaining signals
+- At least 8 test cases covering: all high, all low, mixed, missing signals, edge cases
+- Score is a float, not an integer (enables fine-grained temporal smoothing)
+- Function is pure (no side effects, no state) - easy to test and reason about
 
 ## Branch
 
@@ -1173,13 +1199,13 @@ print(f'After 20s at 35: {state}')  # DISTRACTED
 
 ## Acceptance Criteria
 
-- [ ] 5 states: ENGAGED (70-100), PASSIVE (40-69), DISTRACTED (15-39), DROWSY (0-30 + drowsy signal), CONFUSED (any score + confused expression)
-- [ ] Duration thresholds: ENGAGED (immediate), PASSIVE (30s), DISTRACTED (15s), DROWSY (10s), CONFUSED (20s)
-- [ ] Hysteresis prevents transitions from brief fluctuations
-- [ ] State history logged with timestamps
-- [ ] Transition events emittable (callback or event list)
-- [ ] Score ranges and duration thresholds configurable
-- [ ] At least 6 test cases: sustained high, sustained low, brief dip, gradual decline, drowsy override, confused override
+- 5 states: ENGAGED (70-100), PASSIVE (40-69), DISTRACTED (15-39), DROWSY (0-30 + drowsy signal), CONFUSED (any score + confused expression)
+- Duration thresholds: ENGAGED (immediate), PASSIVE (30s), DISTRACTED (15s), DROWSY (10s), CONFUSED (20s)
+- Hysteresis prevents transitions from brief fluctuations
+- State history logged with timestamps
+- Transition events emittable (callback or event list)
+- Score ranges and duration thresholds configurable
+- At least 6 test cases: sustained high, sustained low, brief dip, gradual decline, drowsy override, confused override
 
 ## Branch
 
@@ -1236,12 +1262,12 @@ print(f'After 3s sustained drop: smoothed = {smoothed:.1f}')  # should be ~25-30
 
 ## Acceptance Criteria
 
-- [ ] Sliding window of configurable size (default 30 frames = 2 seconds at 15 FPS)
-- [ ] Single-frame anomalies do not drop the smoothed output by more than 5 points
-- [ ] Sustained changes are fully reflected within 3 seconds
-- [ ] Handles empty window gracefully (returns raw score when buffer not yet full)
-- [ ] Memory usage bounded (uses deque, not growing list)
-- [ ] At least 4 test cases: stable input, single anomaly, sustained change, ramp up/down
+- Sliding window of configurable size (default 30 frames = 2 seconds at 15 FPS)
+- Single-frame anomalies do not drop the smoothed output by more than 5 points
+- Sustained changes are fully reflected within 3 seconds
+- Handles empty window gracefully (returns raw score when buffer not yet full)
+- Memory usage bounded (uses deque, not growing list)
+- At least 4 test cases: stable input, single anomaly, sustained change, ramp up/down
 
 ## Branch
 
@@ -1293,13 +1319,13 @@ print(f'High EAR student threshold: {cm2.ear_threshold:.3f}')  # ~0.28
 
 ## Acceptance Criteria
 
-- [ ] 30-second calibration captures: resting EAR, natural head pose, expression distribution
-- [ ] EAR threshold set to (resting_ear * 0.8) instead of fixed 0.25
-- [ ] Gaze thresholds adjusted relative to natural head pose
-- [ ] Calibration data persisted per student in database
-- [ ] Student can re-calibrate anytime
-- [ ] Skippable with clear warning
-- [ ] API: POST /api/calibrate/{user_id}, GET /api/calibrate/{user_id}
+- 30-second calibration captures: resting EAR, natural head pose, expression distribution
+- EAR threshold set to (resting_ear * 0.8) instead of fixed 0.25
+- Gaze thresholds adjusted relative to natural head pose
+- Calibration data persisted per student in database
+- Student can re-calibrate anytime
+- Skippable with clear warning
+- API: POST /api/calibrate/{user_id}, GET /api/calibrate/{user_id}
 
 ## Branch
 
@@ -1365,13 +1391,13 @@ print(f'Max: nudge={decision.should_nudge}')  # False
 
 ## Acceptance Criteria
 
-- [ ] Nudge triggers only after configurable sustained disengagement (default: 30 seconds)
-- [ ] Cooldown period: default 5 minutes, configurable
-- [ ] Maximum nudges per session: default 5, configurable
-- [ ] Considers past nudge effectiveness when selecting type
-- [ ] Returns NudgeDecision with: should_nudge, nudge_type, reason
-- [ ] LangGraph implementation with clear state graph
-- [ ] At least 6 test cases
+- Nudge triggers only after configurable sustained disengagement (default: 30 seconds)
+- Cooldown period: default 5 minutes, configurable
+- Maximum nudges per session: default 5, configurable
+- Considers past nudge effectiveness when selecting type
+- Returns NudgeDecision with: should_nudge, nudge_type, reason
+- LangGraph implementation with clear state graph
+- At least 6 test cases
 
 ## Branch
 
@@ -1415,13 +1441,13 @@ curl -X POST http://localhost:8000/api/nudge/test \\
 
 ## Acceptance Criteria
 
-- [ ] Browser notification: shows with custom message, auto-dismisses after 5 seconds
-- [ ] Visual overlay: subtle screen-edge glow, fades in/out, non-blocking
-- [ ] Audio chime: gentle sound, under 2 seconds, low volume
-- [ ] Each channel triggerable independently
-- [ ] Nudge type and timestamp logged to database
-- [ ] Student can disable any channel via API
-- [ ] Delivery is async (does not block detection pipeline)
+- Browser notification: shows with custom message, auto-dismisses after 5 seconds
+- Visual overlay: subtle screen-edge glow, fades in/out, non-blocking
+- Audio chime: gentle sound, under 2 seconds, low volume
+- Each channel triggerable independently
+- Nudge type and timestamp logged to database
+- Student can disable any channel via API
+- Delivery is async (does not block detection pipeline)
 
 ## Branch
 
@@ -1478,12 +1504,12 @@ print(f'Notification rate: {stats[\"notification\"].success_rate:.0%}')
 
 ## Acceptance Criteria
 
-- [ ] Measures engagement score delta in 60-second post-nudge window
-- [ ] Nudge is \"effective\" if average post-nudge score improves by 10+ points
-- [ ] Tracks success rate per nudge type
-- [ ] Feeds effectiveness data to nudge decision agent
-- [ ] Persists history per student across sessions
-- [ ] At least 4 test cases
+- Measures engagement score delta in 60-second post-nudge window
+- Nudge is \"effective\" if average post-nudge score improves by 10+ points
+- Tracks success rate per nudge type
+- Feeds effectiveness data to nudge decision agent
+- Persists history per student across sessions
+- At least 4 test cases
 
 ## Branch
 
@@ -1529,13 +1555,13 @@ curl http://localhost:8000/api/preferences/2
 
 ## Acceptance Criteria
 
-- [ ] Toggle each nudge channel independently
-- [ ] Quiet hours with start and end time (24-hour format)
-- [ ] Sensitivity: less (10-min cooldown), normal (5-min), more (3-min)
-- [ ] Preferences persist across sessions
-- [ ] Changes take effect immediately
-- [ ] Default: all enabled, no quiet hours, normal sensitivity
-- [ ] Responsive design (works on phone)
+- Toggle each nudge channel independently
+- Quiet hours with start and end time (24-hour format)
+- Sensitivity: less (10-min cooldown), normal (5-min), more (3-min)
+- Preferences persist across sessions
+- Changes take effect immediately
+- Default: all enabled, no quiet hours, normal sensitivity
+- Responsive design (works on phone)
 
 ## Branch
 
@@ -1589,12 +1615,12 @@ print(f'Dips at: {[d.minute for d in dips]}')
 
 ## Acceptance Criteria
 
-- [ ] Computes: mean, median, std dev, min, max, engaged percentage (score > 70)
-- [ ] Minute-by-minute engagement timeline
-- [ ] Detects dips where class average drops > 15% from session average
-- [ ] All student IDs anonymized in output
-- [ ] Handles missing data (disconnected students excluded)
-- [ ] At least 4 test cases
+- Computes: mean, median, std dev, min, max, engaged percentage (score > 70)
+- Minute-by-minute engagement timeline
+- Detects dips where class average drops > 15% from session average
+- All student IDs anonymized in output
+- Handles missing data (disconnected students excluded)
+- At least 4 test cases
 
 ## Branch
 
@@ -1644,12 +1670,12 @@ print(f'Declining: declining_trend={result.declining_trend}')
 
 ## Acceptance Criteria
 
-- [ ] Flags students with average below threshold for 3+ consecutive sessions
-- [ ] Detects declining trend: current week avg < previous week avg by > 10%
-- [ ] Rolling 7-day and 30-day analysis windows
-- [ ] At-risk list uses anonymized student IDs
-- [ ] Students can opt in to be identified for targeted help
-- [ ] At least 5 test cases
+- Flags students with average below threshold for 3+ consecutive sessions
+- Detects declining trend: current week avg < previous week avg by > 10%
+- Rolling 7-day and 30-day analysis windows
+- At-risk list uses anonymized student IDs
+- Students can opt in to be identified for targeted help
+- At least 5 test cases
 
 ## Branch
 
@@ -1693,13 +1719,13 @@ curl 'http://localhost:8000/api/export/courses/1?format=csv&start=2026-06-01&end
 
 ## Acceptance Criteria
 
-- [ ] GET /api/export/sessions/{id}?format=csv and ?format=json
-- [ ] Columns: timestamp, anonymized_student_id, engagement_score, state, gaze_state, drowsiness, expression
-- [ ] Filter by: date range, course_id, student_id
-- [ ] Large exports (1000+ rows) stream via chunked response
-- [ ] CSV is RFC 4180 compliant
-- [ ] Frontend export button triggers download
-- [ ] Student IDs always anonymized in exports
+- GET /api/export/sessions/{id}?format=csv and ?format=json
+- Columns: timestamp, anonymized_student_id, engagement_score, state, gaze_state, drowsiness, expression
+- Filter by: date range, course_id, student_id
+- Large exports (1000+ rows) stream via chunked response
+- CSV is RFC 4180 compliant
+- Frontend export button triggers download
+- Student IDs always anonymized in exports
 
 ## Branch
 
@@ -1743,12 +1769,12 @@ open report.html
 
 ## Acceptance Criteria
 
-- [ ] Includes: session metadata, engagement timeline, state distribution, top distraction moments
-- [ ] Highlights top 3 engagement dip moments with timestamps
-- [ ] Shows class average comparison (anonymized)
-- [ ] Renders as clean, self-contained HTML (inline CSS, Chart.js CDN)
-- [ ] Can be sent as email body or downloaded
-- [ ] Generates in under 5 seconds for 1-hour session
+- Includes: session metadata, engagement timeline, state distribution, top distraction moments
+- Highlights top 3 engagement dip moments with timestamps
+- Shows class average comparison (anonymized)
+- Renders as clean, self-contained HTML (inline CSS, Chart.js CDN)
+- Can be sent as email body or downloaded
+- Generates in under 5 seconds for 1-hour session
 
 ## Branch
 
@@ -1790,13 +1816,13 @@ open weekly.html
 
 ## Acceptance Criteria
 
-- [ ] Engagement trends across all lectures in the week
-- [ ] Day-of-week and time-of-day pattern charts
-- [ ] Week-over-week comparison with delta indicators
-- [ ] At-risk student count (anonymized)
-- [ ] Top difficult segments ranked across all lectures
-- [ ] Exportable as HTML and PDF
-- [ ] Generates in under 10 seconds
+- Engagement trends across all lectures in the week
+- Day-of-week and time-of-day pattern charts
+- Week-over-week comparison with delta indicators
+- At-risk student count (anonymized)
+- Top difficult segments ranked across all lectures
+- Exportable as HTML and PDF
+- Generates in under 10 seconds
 
 ## Branch
 
@@ -1845,13 +1871,13 @@ for s in suggestions:
 
 ## Acceptance Criteria
 
-- [ ] 3+ actionable suggestions per session
-- [ ] Every suggestion references specific data: timestamps, percentages, patterns
-- [ ] No generic advice (\"make it more engaging\" is a failure)
-- [ ] Uses Groq (free tier) by default, configurable
-- [ ] Suggestions categorized: content, delivery, structure
-- [ ] Generates in under 10 seconds
-- [ ] Handles empty sessions gracefully
+- 3+ actionable suggestions per session
+- Every suggestion references specific data: timestamps, percentages, patterns
+- No generic advice (\"make it more engaging\" is a failure)
+- Uses Groq (free tier) by default, configurable
+- Suggestions categorized: content, delivery, structure
+- Generates in under 10 seconds
+- Handles empty sessions gracefully
 
 ## Branch
 
@@ -1900,11 +1926,11 @@ for seg in difficult:
 
 ## Acceptance Criteria
 
-- [ ] Identifies segments where engagement drops > 15% from session average
-- [ ] Tracks per-segment difficulty across multiple sessions
-- [ ] Ranks by severity: frequency x magnitude
-- [ ] Works with timing data only
-- [ ] At least 3 test cases
+- Identifies segments where engagement drops > 15% from session average
+- Tracks per-segment difficulty across multiple sessions
+- Ranks by severity: frequency x magnitude
+- Works with timing data only
+- At least 3 test cases
 
 ## Branch
 
@@ -1946,12 +1972,12 @@ python -m src.reports.email_sender --to test@nst.edu --report weekly --course-id
 
 ## Acceptance Criteria
 
-- [ ] Session report email within 5 minutes of session end
-- [ ] Weekly report every Monday at 8am
-- [ ] HTML renders in Gmail, Outlook, and mobile
-- [ ] Teacher can opt out
-- [ ] Falls back gracefully without SendGrid key (saves to file)
-- [ ] Rate limiting: max 10 emails per minute
+- Session report email within 5 minutes of session end
+- Weekly report every Monday at 8am
+- HTML renders in Gmail, Outlook, and mobile
+- Teacher can opt out
+- Falls back gracefully without SendGrid key (saves to file)
+- Rate limiting: max 10 emails per minute
 
 ## Branch
 
@@ -1996,13 +2022,13 @@ cd frontend && npm install && npm run dev
 
 ## Acceptance Criteria
 
-- [ ] Engagement chart: last 7 sessions (Recharts line chart, interactive hover)
-- [ ] Focus streak counter for consecutive sessions with avg > 70
-- [ ] Session history: scrollable list with date, course, duration, score
-- [ ] At least 2 personalized improvement tips
-- [ ] Loading and empty states
-- [ ] Responsive: laptop (1024px+) and tablet (768px)
-- [ ] Fetches data from backend API
+- Engagement chart: last 7 sessions (Recharts line chart, interactive hover)
+- Focus streak counter for consecutive sessions with avg > 70
+- Session history: scrollable list with date, course, duration, score
+- At least 2 personalized improvement tips
+- Loading and empty states
+- Responsive: laptop (1024px+) and tablet (768px)
+- Fetches data from backend API
 
 ## Branch
 
@@ -2049,14 +2075,14 @@ python scripts/simulate_session.py --students 3 --duration 60
 
 ## Acceptance Criteria
 
-- [ ] Class overview with course selector, student count, average engagement
-- [ ] Live engagement: real-time line graph via WebSocket, 2-second updates
-- [ ] Session history: selectable, clicking shows report
-- [ ] Intervention panel: 3+ suggestions from intervention agent
-- [ ] At-risk panel: anonymized students with trend arrows
-- [ ] WebSocket reconnects on disconnect
-- [ ] Loading and empty states
-- [ ] Responsive: laptop and tablet
+- Class overview with course selector, student count, average engagement
+- Live engagement: real-time line graph via WebSocket, 2-second updates
+- Session history: selectable, clicking shows report
+- Intervention panel: 3+ suggestions from intervention agent
+- At-risk panel: anonymized students with trend arrows
+- WebSocket reconnects on disconnect
+- Loading and empty states
+- Responsive: laptop and tablet
 
 ## Branch
 
@@ -2104,13 +2130,13 @@ npm run build && npx serve dist/
 
 ## Acceptance Criteria
 
-- [ ] Dashboard usable on 375px screens (no horizontal scroll)
-- [ ] Hamburger menu on mobile, sidebar on desktop
-- [ ] Charts: responsive aspect ratio, readable labels, touch-friendly tooltips
-- [ ] All interactive elements have 44px minimum touch targets
-- [ ] PWA manifest with icons, theme color, start URL
-- [ ] Service worker caches static assets
-- [ ] Lighthouse PWA audit > 80
+- Dashboard usable on 375px screens (no horizontal scroll)
+- Hamburger menu on mobile, sidebar on desktop
+- Charts: responsive aspect ratio, readable labels, touch-friendly tooltips
+- All interactive elements have 44px minimum touch targets
+- PWA manifest with icons, theme color, start URL
+- Service worker caches static assets
+- Lighthouse PWA audit > 80
 
 ## Branch
 
@@ -2159,15 +2185,15 @@ curl https://your-app.up.railway.app/health
 
 ## Acceptance Criteria
 
-- [ ] E2E test processes 10-minute pre-recorded session through full pipeline
-- [ ] \`docker-compose up --build\` starts all services without errors
-- [ ] Deployed to Railway or Render with live public URL
-- [ ] Frontend loads on live URL
-- [ ] WebSocket works on live URL
-- [ ] \`docs/deployment_guide.md\`: live URL, redeploy steps, env vars
-- [ ] \`docs/architecture.md\`: system diagram, tech stack table
-- [ ] Demo video (3-5 minutes): onboarding, calibration, live tracking, nudge, teacher analytics
-- [ ] All existing tests pass
+- E2E test processes 10-minute pre-recorded session through full pipeline
+- \`docker-compose up --build\` starts all services without errors
+- Deployed to Railway or Render with live public URL
+- Frontend loads on live URL
+- WebSocket works on live URL
+- \`docs/deployment_guide.md\`: live URL, redeploy steps, env vars
+- \`docs/architecture.md\`: system diagram, tech stack table
+- Demo video (3-5 minutes): onboarding, calibration, live tracking, nudge, teacher analytics
+- All existing tests pass
 
 ## Branch
 
