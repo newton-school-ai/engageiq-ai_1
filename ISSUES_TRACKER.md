@@ -168,11 +168,11 @@ python -m src.ingestion.frame_extractor --input data/sample_recordings/test_clip
 
 ---
 
-### Issue #7: Build user onboarding API
+### Issue #7: Build user auth with Google OAuth, JWT sessions, and onboarding API
 
-**Why:** Students and teachers have different roles, permissions, and privacy preferences. The onboarding flow captures these at signup.
+**Why:** One-click Google login for zero signup friction. Students and teachers have different roles, permissions, and privacy preferences captured during onboarding on first login.
 
-**What:** Create FastAPI endpoints for user registration, course creation, course enrollment, and privacy preference setting.
+**What:** Google OAuth integration, JWT token issuance/validation, protected route middleware, user onboarding (role + privacy), course CRUD, enrollment, frontend login UI.
 
 **Files to create:**
 - src/api/routes/users.py

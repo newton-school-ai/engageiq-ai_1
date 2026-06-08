@@ -418,74 +418,100 @@ Closes #5
 
 ---
 
-## Issue #7: Build user onboarding API
+## Issue #7: Build user auth with Google OAuth, JWT sessions, and onboarding API
 
-**Labels:** `m1`, `infra`
+**Labels:** `m1`, `infra`, `frontend`
 **Milestone:** M1: Project Scaffold and Webcam Pipeline
 
 ### Why
 
 EngageIQ has two types of users with fundamentally different needs. Students want personal engagement data and smart nudges. Teachers want class-level analytics and intervention suggestions. The system must know who is who from the moment they sign up.
 
-Privacy preferences are captured at onboarding, not as an afterthought. When a student registers, they choose "local_only" (data stays on their device) or "share_with_teacher" (anonymized scores visible to teacher). This cannot be a default that users forget to change - it must be an explicit choice during signup.
+Google OAuth is the primary login method because the target users are college students and teachers, almost all of them have a Google account (university email or personal Gmail). One-click Google login reduces signup friction to near zero.
+
+The flow: user clicks "Sign in with Google" -> Google consent screen -> backend receives auth code -> exchanges for Google profile (name, email, avatar) -> creates or finds user in database -> issues a JWT token for session management. On first login, the user is directed to an onboarding screen where they select their role (student/teacher) and privacy preferences.
+
+Privacy preferences are captured at onboarding, not as an afterthought. When a student registers, they choose "local_only" (data stays on their device) or "share_with_teacher" (anonymized scores visible to teacher). This cannot be a default that users forget to change, it must be an explicit choice during signup.
 
 The course enrollment API is how students connect to their teacher's class. Without it, the system cannot aggregate individual engagement into class-level analytics for the teacher.
 
 ### What needs to be built
 
-FastAPI endpoints for user registration (student and teacher), course CRUD, course enrollment, and privacy preference management.
+Google OAuth integration, JWT token issuance/validation, protected route middleware, user onboarding (role + privacy), course CRUD, course enrollment, frontend login UI.
 
 ### Files to create or update
 
-- `src/api/routes/users.py` - User registration and profile endpoints
+- `src/api/routes/auth.py` - Google OAuth callback, token issuance, token refresh
+- `src/api/routes/users.py` - User profile, onboarding (role + privacy selection)
 - `src/api/routes/courses.py` - Course CRUD and enrollment endpoints
-- `src/api/schemas/user.py` - Pydantic schemas for request/response validation
+- `src/api/middleware/auth.py` - JWT verification middleware, role-based access (student vs teacher)
+- `src/api/schemas/user.py` - Pydantic schemas (UserCreate, UserResponse, TokenResponse)
 - `src/api/schemas/course.py` - Pydantic schemas for course operations
+- `src/models/user.py` - Add google_id, avatar_url, auth_provider fields
+- `frontend/src/components/GoogleLoginButton.jsx` - Google sign-in button
+- `frontend/src/contexts/AuthContext.jsx` - Auth state management, token storage, auto-refresh
+- `.env.example` - Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, JWT_SECRET_KEY
 
 ### How this affects overall development
 
-This API is how the frontend (M8) communicates with the backend. The session endpoints created here are what the webcam pipeline uses to start and stop engagement tracking sessions. The privacy preferences set here determine data flow for the entire system.
+User identity gates session history, engagement data, nudge preferences, and teacher dashboards. Protected routes ensure only authenticated users can start webcam sessions or view analytics. Privacy preferences set here determine data flow for the entire system. The course enrollment API is how students connect to their teacher's class for aggregated analytics.
 
 ### How to test locally
 
 ```bash
-# Start API
+# 1. Set up Google OAuth credentials at console.cloud.google.com
+#    - Create OAuth 2.0 Client ID (Web application)
+#    - Add http://localhost:5173 to Authorized JavaScript origins
+#    - Add http://localhost:8000/api/auth/google/callback to Authorized redirect URIs
+#    - Copy Client ID and Client Secret to .env
+
+# 2. Start backend
 uvicorn src.api.main:app --reload --port 8000
 
-# Register a teacher
-curl -X POST http://localhost:8000/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Prof. Sharma", "email": "sharma@nst.edu", "role": "teacher"}'
+# 3. Start frontend
+cd frontend && npm run dev
 
-# Register a student with privacy preference
-curl -X POST http://localhost:8000/api/users \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Rahul", "email": "rahul@nst.edu", "role": "student", "privacy_mode": "local_only"}'
+# 4. Click "Sign in with Google" -> consent screen -> redirected back -> logged in
+# 5. First-time users see onboarding: select role (student/teacher) + privacy preference
 
-# Create a course
+# 6. Verify JWT works
+TOKEN="<jwt_from_login_response>"
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/users/me
+
+# 7. Test protected route without token
+curl http://localhost:8000/api/users/me
+# Should return 401 Unauthorized
+
+# 8. Create a course (teacher only)
 curl -X POST http://localhost:8000/api/courses \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name": "Data Structures", "code": "CS201", "teacher_id": 1}'
+  -d '{"name": "Data Structures", "code": "CS201"}'
 
-# Enroll student in course
+# 9. Enroll student in course
 curl -X POST http://localhost:8000/api/courses/1/enroll \
-  -H "Content-Type: application/json" \
-  -d '{"student_id": 2}'
+  -H "Authorization: Bearer $TOKEN"
 
-# Verify enrollment
-curl http://localhost:8000/api/courses/1/students
+# 10. Verify enrollment
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/courses/1/students
 ```
 
 ### Acceptance Criteria
 
-- POST /api/users creates student or teacher with role validation
-- Privacy mode is required for students (no default - must explicitly choose)
-- POST /api/courses creates a course linked to a teacher
-- POST /api/courses/{id}/enroll enrolls a student in a course
-- GET /api/courses/{id}/students returns enrolled students
-- Input validation with clear error messages (e.g., "email already registered", "invalid role")
-- All endpoints documented in FastAPI /docs
-- At least 5 tests covering happy paths and validation errors
+- [ ] Google OAuth login flow works end-to-end (click -> consent -> JWT -> logged in)
+- [ ] Backend exchanges Google auth code for user profile (name, email, avatar)
+- [ ] New users directed to onboarding screen on first login (select role + privacy)
+- [ ] JWT issued on login, expires in 24 hours, refresh token for 7 days
+- [ ] JWT middleware protects routes: webcam session, engagement data, analytics
+- [ ] Role-based access: teacher-only routes (class analytics, intervention) check role
+- [ ] Privacy mode required for students (no default, must explicitly choose local_only or share_with_teacher)
+- [ ] Frontend shows Google login button, user avatar + name after login, logout button
+- [ ] Auth state persists across page refresh (token stored in memory, refresh on expiry)
+- [ ] POST /api/courses creates a course linked to authenticated teacher
+- [ ] POST /api/courses/{id}/enroll enrolls authenticated student in a course
+- [ ] GET /api/courses/{id}/students returns enrolled students
+- [ ] Input validation with clear error messages (e.g., "email already registered", "invalid role")
+- [ ] At least 5 tests: Google login mock, JWT validation, protected route 401, role check, course enrollment
 
 ### Branch
 
