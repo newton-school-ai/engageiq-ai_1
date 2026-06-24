@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches: ["dev", "main", "feature/**"]
+  pull_request:
+    branches: ["dev", "main"]
+
+jobs:
+  lint-and-test:
+    name: Lint & Test (Python 3.10)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: engageiq_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/engageiq_test
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY || 'test-key-placeholder' }}
+      LLM_PROVIDER: groq
+      SECRET_KEY: ci-test-secret-key
+      DEBUG: "true"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            libsm6 \
+            libxext6 \
+            libxrender-dev \
+            libgomp1 \
+            libpango-1.0-0 \
+            libpangocairo-1.0-0 \
+            libgdk-pixbuf2.0-0 \
+            libcairo2
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify package imports
+        run: |
+          python -c "from src.agents import supervisor; print('agents OK')"
+          python -c "from src.detection import face_mesh; print('detection OK')"
+          python -c "from src.scoring import engagement_score; print('scoring OK')"
+          python -c "from src.nudge import nudge_decision; print('nudge OK')"
+          python -c "from src.analytics import class_aggregator; print('analytics OK')"
+          python -c "from src.api.main import app; print('API OK')"
+
+      - name: Lint with flake8
+        run: |
+          flake8 src/ tests/ --max-line-length=100 --extend-ignore=E501,W503
+
+      - name: Check formatting with black
+        run: |
+          black --check src/ tests/
+
+      - name: Check import ordering with isort
+        run: |
+          isort --check-only src/ tests/
+
+      - name: Run tests with pytest
+        run: |
+          pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env for Docker build
+        run: cp .env.example .env
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: engageiq-ai:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start services and verify health endpoint
+        run: |
+          docker compose up -d db backend
+          echo "Waiting for backend to be healthy..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health; then
+              echo ""
+              echo "Health check passed!"
+              break
+            fi
+            echo "Attempt $i/30 - waiting..."
+            sleep 5
+          done
+          curl -sf http://localhost:8000/health | grep '"status":"ok"'
+          docker compose down
