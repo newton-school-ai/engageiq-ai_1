@@ -41,8 +41,10 @@ data/expression_dataset/*.zip
 data/expression_dataset/train/
 data/expression_dataset/test/
 data/test_lectures/*.mp4
+data/videos/
 
 # Model weights (downloaded on setup)
+models/weights/
 models/weights/*.pt
 models/weights/*.pth
 models/weights/*.onnx
