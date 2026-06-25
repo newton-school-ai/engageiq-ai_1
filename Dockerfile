@@ -4,22 +4,18 @@ WORKDIR /app
 
 # System dependencies for OpenCV, MediaPipe, and WeasyPrint
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # OpenCV runtime libs
-    libgl1 \
+    libgl1-mesa-glx \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
-    # MediaPipe requires these additional libs
     libgomp1 \
     libusb-1.0-0 \
-    # WeasyPrint / Cairo / Pango rendering
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
     libgdk-pixbuf2.0-0 \
     libcairo2 \
     libffi-dev \
-    # Build tools (needed for some pip packages)
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
