@@ -34,17 +34,15 @@ services:
       - .:/app
     command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
 
-  # Frontend service is defined here but requires a separate build step.
-  # Uncomment once the frontend scaffold exists in ./frontend.
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "5173:5173"
-  #   depends_on:
-  #     - backend
-  #   volumes:
-  #     - ./frontend:/app
-  #     - /app/node_modules
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
 volumes:
   pgdata:
