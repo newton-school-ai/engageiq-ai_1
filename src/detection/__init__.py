@@ -1,12 +1,12 @@
 """Detection package - CV-based signal extraction from webcam frames."""
 
-from src.detection.expression import Expression, ExpressionClassifier
-from src.detection.face_mesh import FaceMeshDetector
-from src.detection.gaze_classifier import GazeState, classify_gaze
-from src.detection.head_pose import estimate_head_pose
-from src.detection.object_detector import ObjectDetector
-from src.detection.drowsiness import DrowsinessDetector, compute_ear
-from src.detection.yawn import YawnDetector, compute_mar
+from src.detection.drowsiness import DrowsinessDetector, compute_ear  # noqa: F401
+from src.detection.expression import Expression, ExpressionClassifier  # noqa: F401
+from src.detection.face_mesh import FaceMeshDetector  # noqa: F401
+from src.detection.gaze_classifier import GazeState, classify_gaze  # noqa: F401
+from src.detection.head_pose import estimate_head_pose  # noqa: F401
+from src.detection.object_detector import ObjectDetector  # noqa: F401
+from src.detection.yawn import YawnDetector, compute_mar  # noqa: F401
 
 __all__ = [
     "Expression",

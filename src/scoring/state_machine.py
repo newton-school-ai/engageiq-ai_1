@@ -20,7 +20,9 @@ class EngagementStateMachine:
         self._pending_state = None
         self._pending_start = None
 
-    def update(self, score: float, is_drowsy: bool, is_confused: bool, timestamp: float) -> EngagementState:
+    def update(
+        self, score: float, is_drowsy: bool, is_confused: bool, timestamp: float
+    ) -> EngagementState:
         """Update state machine with new engagement score.
 
         Returns:
