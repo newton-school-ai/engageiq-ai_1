@@ -1,7 +1,5 @@
 """EAR-based drowsiness detection with temporal smoothing."""
 
-import numpy as np
-
 
 def compute_ear(eye_landmarks: list[tuple[float, float]]) -> float:
     """Compute Eye Aspect Ratio from 6 eye landmarks.
