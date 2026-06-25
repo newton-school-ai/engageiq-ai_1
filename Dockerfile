@@ -20,9 +20,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+# Allow CI to pass a lightweight requirements file via build arg
+ARG REQUIREMENTS_FILE=requirements.txt
+COPY requirements*.txt ./
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir -r ${REQUIREMENTS_FILE}
 
 COPY . .
 
