@@ -5,7 +5,7 @@ WORKDIR /app
 # System dependencies for OpenCV, MediaPipe, and WeasyPrint
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # OpenCV runtime libs
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
