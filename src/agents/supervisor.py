@@ -1,7 +1,9 @@
 """Supervisor agent - orchestrates the engagement monitoring pipeline."""
 
 
-def run_pipeline(mode: str = "student", duration: int = 60, input_source: str = "webcam"):
+def run_pipeline(
+    mode: str = "student", duration: int = 60, input_source: str = "webcam"
+):
     """Run the full engagement monitoring pipeline.
 
     Args:
@@ -15,6 +17,7 @@ def run_pipeline(mode: str = "student", duration: int = 60, input_source: str = 
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="EngageIQ AI Supervisor Agent")
     parser.add_argument("--mode", default="student", choices=["student", "teacher"])
     parser.add_argument("--duration", type=int, default=60)

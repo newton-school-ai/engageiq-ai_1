@@ -1,7 +1,9 @@
 """Head pose estimation using MediaPipe landmarks + OpenCV solvePnP."""
 
 
-def estimate_head_pose(landmarks: list, frame_shape: tuple) -> tuple[float, float, float]:
+def estimate_head_pose(
+    landmarks: list, frame_shape: tuple
+) -> tuple[float, float, float]:
     """Estimate head pose from facial landmarks.
 
     Args:

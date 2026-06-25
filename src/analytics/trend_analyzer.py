@@ -1,4 +1,5 @@
 """Trend analysis and anomaly detection on engagement time-series."""
+
 # TODO: Implement full trend analysis logic
 
 
@@ -17,7 +18,9 @@ class TrendAnalyzer:
         # TODO: Implement linear regression trend
         raise NotImplementedError
 
-    def detect_anomalies(self, scores: list[float], z_threshold: float = 2.0) -> list[int]:
+    def detect_anomalies(
+        self, scores: list[float], z_threshold: float = 2.0
+    ) -> list[int]:
         """Detect anomalous scores using Z-score thresholding.
 
         Args:
