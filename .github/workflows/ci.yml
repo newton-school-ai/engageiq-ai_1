@@ -86,11 +86,36 @@ jobs:
           path: coverage.xml
 
   docker-build:
-    name: Docker Build
+    name: Docker Build & Health Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate Dockerfile syntax
-        run: docker build --dry-run -t engageiq-ai:ci . 2>&1 | head -20 || echo "Dockerfile syntax check completed"
+      - name: Build Docker image
+        run: |
+          docker build --build-arg REQUIREMENTS_FILE=requirements-ci.txt -t engageiq-ai:ci .
+
+      - name: Run container
+        run: |
+          docker run -d --name test-app -p 8000:8000 -e DATABASE_URL=postgresql://postgres:postgres@localhost:5432/engageiq_dev -e GROQ_API_KEY=test-key-placeholder engageiq-ai:ci
+
+      - name: Verify health check
+        run: |
+          # Wait up to 30 seconds for the service to start
+          for i in {1..15}; do
+            if curl --silent --fail http://localhost:8000/health; then
+              echo "Health check succeeded!"
+              exit 0
+            fi
+            echo "Waiting for app to start..."
+            sleep 2
+          done
+          echo "Health check failed!"
+          docker logs test-app
+          exit 1
+
+      - name: Stop container
+        if: always()
+        run: |
+          docker rm -f test-app || true
