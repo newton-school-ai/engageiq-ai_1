@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: ["dev", "main", "feature/**"]
   pull_request:
     branches: ["dev", "main"]
 
@@ -56,7 +54,7 @@ jobs:
             libgomp1 \
             libpango-1.0-0 \
             libpangocairo-1.0-0 \
-            libgdk-pixbuf2.0-0 \
+            libgdk-pixbuf-2.0-0 \
             libcairo2
 
       - name: Install Python dependencies
@@ -64,36 +62,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-ci.txt
 
-      - name: Verify package imports
-        run: |
-          python -c "from src.agents import supervisor; print('agents OK')"
-          python -c "from src.scoring import engagement_score; print('scoring OK')"
-          python -c "from src.nudge import nudge_decision; print('nudge OK')"
-          python -c "from src.analytics import class_aggregator; print('analytics OK')"
-          python -c "from src.api.main import app; print('API OK')"
-
-      - name: Lint with flake8
-        run: |
-          flake8 src/ tests/ --max-line-length=100 --extend-ignore=E501,W503
-
-      - name: Check formatting with black
+      - name: Run Black check
         run: |
           black --check src/ tests/
 
-      - name: Check import ordering with isort
+      - name: Run Isort check
         run: |
-          isort --check-only src/ tests/
+          isort --check src/ tests/
+
+      - name: Run Flake8 linter
+        run: |
+          flake8 src/ tests/
 
       - name: Run tests with pytest
         run: |
-          set +e
           pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
-          EXIT_CODE=$?
-          if [ $EXIT_CODE -eq 5 ]; then
-            echo "No tests collected yet (scaffold phase) - OK"
-            exit 0
-          fi
-          exit $EXIT_CODE
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
