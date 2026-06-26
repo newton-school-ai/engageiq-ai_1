@@ -1,6 +1,7 @@
 """Application settings and configuration."""
 
 from enum import Enum
+
 from pydantic_settings import BaseSettings
 
 

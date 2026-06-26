@@ -14,6 +14,7 @@ class FaceMeshDetector:
     def _init_mesh(self):
         """Initialize MediaPipe Face Mesh (lazy to avoid import on module load)."""
         import mediapipe as mp
+
         self._mesh = mp.solutions.face_mesh.FaceMesh(
             max_num_faces=self.max_faces,
             min_detection_confidence=self.min_detection_confidence,
