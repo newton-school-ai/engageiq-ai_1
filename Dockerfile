@@ -2,7 +2,13 @@ FROM python:3.10-slim-bullseye
 
 WORKDIR /app
 
-# System dependencies for OpenCV, MediaPipe, and WeasyPrint
+# Allow CI to pass a lightweight requirements file via build arg
+ARG REQUIREMENTS_FILE=requirements.txt
+COPY requirements*.txt ./
+
+# System dependencies for OpenCV, MediaPipe, and WeasyPrint.
+# We temporarily install gcc/g++ to compile native Python extensions,
+# then purge them in the same RUN layer to keep the final image size minimal.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-glx \
     libglib2.0-0 \
@@ -18,13 +24,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi-dev \
     gcc \
     g++ \
+    && pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r ${REQUIREMENTS_FILE} \
+    && apt-get purge -y gcc g++ \
+    && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
-
-# Allow CI to pass a lightweight requirements file via build arg
-ARG REQUIREMENTS_FILE=requirements.txt
-COPY requirements*.txt ./
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r ${REQUIREMENTS_FILE}
 
 COPY . .
 
