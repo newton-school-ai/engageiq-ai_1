@@ -64,18 +64,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-ci.txt
 
-      - name: Verify package imports
-        run: |
-          python -c "from src.agents import supervisor; print('agents OK')"
-          python -c "from src.scoring import engagement_score; print('scoring OK')"
-          python -c "from src.nudge import nudge_decision; print('nudge OK')"
-          python -c "from src.analytics import class_aggregator; print('analytics OK')"
-          python -c "from src.api.main import app; print('API OK')"
-
-      - name: Lint with flake8
-        run: |
-          flake8 src/ tests/ --max-line-length=100 --extend-ignore=E501,W503
-
       - name: Check formatting with black
         run: |
           black --check src/ tests/
@@ -83,6 +71,18 @@ jobs:
       - name: Check import ordering with isort
         run: |
           isort --check-only src/ tests/
+
+      - name: Lint with flake8
+        run: |
+          flake8 src/ tests/ --max-line-length=100 --extend-ignore=E501,W503
+
+      - name: Verify package imports
+        run: |
+          python -c "from src.agents import supervisor; print('agents OK')"
+          python -c "from src.scoring import engagement_score; print('scoring OK')"
+          python -c "from src.nudge import nudge_decision; print('nudge OK')"
+          python -c "from src.analytics import class_aggregator; print('analytics OK')"
+          python -c "from src.api.main import app; print('API OK')"
 
       - name: Run tests with pytest
         run: |
@@ -103,11 +103,34 @@ jobs:
           path: coverage.xml
 
   docker-build:
-    name: Docker Build
+    name: Docker Build & Health Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate Dockerfile syntax
-        run: docker build --dry-run -t engageiq-ai:ci . 2>&1 | head -20 || echo "Dockerfile syntax check completed"
+      - name: Create mock .env file
+        run: cp .env.example .env
+
+      - name: Build and start Docker services
+        run: docker compose up -d --build
+
+      - name: Wait and check health
+        run: |
+          echo "Waiting for backend service to be healthy..."
+          for i in {1..30}; do
+            if curl -s -f http://localhost:8000/health | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"'; then
+              echo "Backend is healthy!"
+              docker compose ps
+              exit 0
+            fi
+            echo "Still waiting... ($i/30)"
+            sleep 2
+          done
+          echo "Backend failed to become healthy in time!"
+          docker compose logs
+          exit 1
+
+      - name: Shut down Docker services
+        if: always()
+        run: docker compose down -v
