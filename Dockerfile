@@ -4,7 +4,7 @@ WORKDIR /app
 
 # System dependencies for OpenCV, MediaPipe, and WeasyPrint
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
@@ -13,18 +13,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libusb-1.0-0 \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-0 \
+    libgdk-pixbuf-2.0-0 \
     libcairo2 \
-    libffi-dev \
-    gcc \
-    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Allow CI to pass a lightweight requirements file via build arg
 ARG REQUIREMENTS_FILE=requirements.txt
 COPY requirements*.txt ./
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r ${REQUIREMENTS_FILE}
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    libffi-dev \
+    && pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r ${REQUIREMENTS_FILE} \
+    && apt-get purge -y gcc g++ libffi-dev \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
