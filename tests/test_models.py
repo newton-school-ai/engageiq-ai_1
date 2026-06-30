@@ -1,6 +1,6 @@
 """Tests for SQLAlchemy models."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy import create_engine
@@ -60,13 +60,13 @@ def test_foreign_key_relationships(db_session: DbSession) -> None:
     lecture = Session(
         course=course,
         title="Schema design",
-        started_at=datetime.now(UTC),
+        started_at=datetime.now(timezone.utc),
         status=SessionStatus.ACTIVE,
     )
     log = EngagementLog(
         session=lecture,
         student=student,
-        frame_timestamp=datetime.now(UTC),
+        frame_timestamp=datetime.now(timezone.utc),
         engagement_score=0.82,
         engagement_state="focused",
     )
@@ -104,13 +104,13 @@ def test_engagement_score_constraint(db_session: DbSession) -> None:
     lecture = Session(
         course=course,
         title="Schema design",
-        started_at=datetime.now(UTC),
+        started_at=datetime.now(timezone.utc),
         status=SessionStatus.ACTIVE,
     )
     invalid_log = EngagementLog(
         session=lecture,
         student=student,
-        frame_timestamp=datetime.now(UTC),
+        frame_timestamp=datetime.now(timezone.utc),
         engagement_score=1.25,
         engagement_state="focused",
     )

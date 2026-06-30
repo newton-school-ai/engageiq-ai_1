@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from random import Random
-import sys
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -13,7 +13,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session as DbSession
 
 from src.config.settings import PrivacyMode, UserRole, settings
-from src.models import Base, Course, EngagementLog, Nudge, Report, Session, SessionStatus, User
+from src.models import (
+    Base,
+    Course,
+    EngagementLog,
+    Nudge,
+    Report,
+    Session,
+    SessionStatus,
+    User,
+)
 
 random = Random(42)
 
@@ -84,7 +93,7 @@ def build_courses(teachers: list[User]) -> list[Course]:
 def build_sessions(courses: list[Course]) -> list[Session]:
     """Build lecture sessions spread across courses."""
 
-    now = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
+    now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
     session_specs = [
         (courses[0], "Feature engineering workshop", 10, SessionStatus.COMPLETED),
         (courses[0], "Model evaluation lab", 8, SessionStatus.COMPLETED),
@@ -96,7 +105,11 @@ def build_sessions(courses: list[Course]) -> list[Session]:
     sessions: list[Session] = []
     for course, title, days_ago, status in session_specs:
         started_at = now - timedelta(days=days_ago, hours=1)
-        ended_at = None if status == SessionStatus.ACTIVE else started_at + timedelta(minutes=75)
+        ended_at = (
+            None
+            if status == SessionStatus.ACTIVE
+            else started_at + timedelta(minutes=75)
+        )
         sessions.append(
             Session(
                 course=course,
@@ -109,7 +122,9 @@ def build_sessions(courses: list[Course]) -> list[Session]:
     return sessions
 
 
-def build_engagement_logs(sessions: list[Session], students: list[User]) -> list[EngagementLog]:
+def build_engagement_logs(
+    sessions: list[Session], students: list[User]
+) -> list[EngagementLog]:
     """Build engagement logs for each session."""
 
     states = ["focused", "neutral", "distracted", "drowsy"]
@@ -174,7 +189,7 @@ def build_nudges(sessions: list[Session], students: list[User]) -> list[Nudge]:
 def build_reports(sessions: list[Session], teachers: list[User]) -> list[Report]:
     """Build sample reports."""
 
-    generated_at = datetime.now(UTC)
+    generated_at = datetime.now(timezone.utc)
     return [
         Report(
             session=sessions[0],
@@ -216,7 +231,9 @@ def main() -> None:
         nudges = build_nudges(sessions, students)
         reports = build_reports(sessions, teachers)
 
-        db.add_all([*teachers, *students, *courses, *sessions, *logs, *nudges, *reports])
+        db.add_all(
+            [*teachers, *students, *courses, *sessions, *logs, *nudges, *reports]
+        )
         db.commit()
 
     print(
