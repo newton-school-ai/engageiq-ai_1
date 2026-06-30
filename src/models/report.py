@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, JSON, String
+from sqlalchemy import JSON, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
@@ -35,7 +35,13 @@ class Report(Base):
     report_type: Mapped[str] = mapped_column(String(100), nullable=False)
     content: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    generated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
 
     session: Mapped[Session] = relationship(back_populates="reports")
-    generator: Mapped[User] = relationship(back_populates="reports", foreign_keys=[generated_by])
+    generator: Mapped[User] = relationship(
+        back_populates="reports",
+        foreign_keys=[generated_by],
+    )

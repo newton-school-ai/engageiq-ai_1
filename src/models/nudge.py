@@ -32,11 +32,19 @@ class Nudge(Base):
         nullable=False,
         index=True,
     )
-    triggered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    triggered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
     nudge_type: Mapped[str] = mapped_column(String(100), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     was_effective: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
-    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     session: Mapped[Session] = relationship(back_populates="nudges")
-    student: Mapped[User] = relationship(back_populates="nudges", foreign_keys=[student_id])
+    student: Mapped[User] = relationship(
+        back_populates="nudges", foreign_keys=[student_id]
+    )

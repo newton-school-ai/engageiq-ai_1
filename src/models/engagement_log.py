@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey, JSON, String
+from sqlalchemy import JSON, CheckConstraint, DateTime, Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base
@@ -38,7 +38,10 @@ class EngagementLog(Base):
         nullable=False,
         index=True,
     )
-    frame_timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    frame_timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
     engagement_score: Mapped[float] = mapped_column(Float, nullable=False)
     engagement_state: Mapped[str] = mapped_column(String(50), nullable=False)
     gaze_score: Mapped[float | None] = mapped_column(Float, nullable=True)
