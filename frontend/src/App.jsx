@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import NudgePreferences from "./components/NudgePreferences";
+import ExportButton from "./components/ExportButton";
 
 export default function App() {
   const [health, setHealth] = useState(null);
@@ -23,6 +24,7 @@ export default function App() {
             Backend status: {" "}
             <strong>{health ? health.status : "checking..."}</strong>
           </p>
+          <ExportButton />
         </>
       )}
     </div>
