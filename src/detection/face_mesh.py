@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import cv2
@@ -69,9 +70,10 @@ class FaceMeshDetector:
             from mediapipe.tasks import python as mp_python
             from mediapipe.tasks.python import vision
 
-            base_options = mp_python.BaseOptions(
-                model_asset_path=None,  # uses bundled model
+            model_asset_path = (
+                Path(__file__).resolve().parents[2] / "models" / "face_landmarker.task"
             )
+            base_options = mp_python.BaseOptions(model_asset_path=str(model_asset_path))
             options = vision.FaceLandmarkerOptions(
                 base_options=base_options,
                 num_faces=self.max_faces,
